@@ -671,37 +671,41 @@ _FX void ScanFolder(MENU_DIR *menu, WCHAR *path, UCHAR source)
         BOOLEAN boxed = FALSE;
 
         if (wcscmp(data.cFileName, L".") != 0 &&
-            wcscmp(data.cFileName, L"..") != 0 &&
+            wcscmp(data.cFileName, L"..") != 0) {
+    
+            wcscpy(path_end + 1, data.cFileName);
+    
             // OneDrive On-Demand feature set both FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS
             // and FILE_ATTRIBUTE_UNPINNED, to determine an expensive call, it should detect
             // flags: FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS | FILE_ATTRIBUTE_RECALL_ON_OPEN |
             // FILE_ATTRIBUTE_OFFLINE.
             //
             // This filter only considers the intersection
-            (data.dwFileAttributes & FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS) == 0) {
-
-            wcscpy(path_end + 1, data.cFileName);
-
+            //(data.dwFileAttributes & FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS) == 0
+    
             //
             // check if this is a sandboxed file
             //
-
-            hFile = CreateFile(
-                path, FILE_GENERIC_READ,
-                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                NULL, OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, NULL);
-
-            if (hFile != INVALID_HANDLE_VALUE) {
-
-                BOOLEAN IsBoxedPath;
-                LONG rc = SbieDll_GetHandlePath(
+    
+            if ((data.dwFileAttributes & FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS) == 0) {
+    
+                hFile = CreateFile(
+                    path, FILE_GENERIC_READ,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING,
+                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    
+                if (hFile != INVALID_HANDLE_VALUE) {
+    
+                    BOOLEAN IsBoxedPath;
+                    LONG rc = SbieDll_GetHandlePath(
                         hFile, StartMenu_TempPath, &IsBoxedPath);
-
-                if (rc == 0 && IsBoxedPath)
-                    boxed = TRUE;
-
-                CloseHandle(hFile);
+    
+                    if (rc == 0 && IsBoxedPath)
+                        boxed = TRUE;
+    
+                    CloseHandle(hFile);
+                }
             }
 
             //
